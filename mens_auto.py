@@ -1,5 +1,7 @@
 from flask import Flask, request
 import requests
+import os
+HUGGINGFACE_API_TOKEN = os.environ.get("HUGGINGFACE_API_TOKEN")
 
 app = Flask(__name__)
 
