@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 VERIFY_TOKEN = "meu-token-super-secreto"
 PAGE_ACCESS_TOKEN = "EAAIOQ55PK3ABOzQKWLVAVb831ZCo90vEe1irA2wkaMFN2fCAwQsNEgELOt1ZADFAoGxjVGJI2tK1XFBZC0W3m2SEqb2cmH9iVu2Yj7bdI9OLC6CKndCZAtOKtqs5bZASammXZB4qmWr5O6RZBwiSV9QyOAhv0nQEsFkjdP5wspJzNKZCMqGUnbaz5xeiMGDN81J61DQ0TQZDZD"
-HUGGINGFACE_API_TOKEN = "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"
+HUGGINGFACE_API_TOKEN = "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"
 
 def send_message(recipient_id, message_text):
     url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
