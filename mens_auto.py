@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 VERIFY_TOKEN = "meu-token-super-secreto"
 PAGE_ACCESS_TOKEN = "EAAIOQ55PK3ABOzQKWLVAVb831ZCo90vEe1irA2wkaMFN2fCAwQsNEgELOt1ZADFAoGxjVGJI2tK1XFBZC0W3m2SEqb2cmH9iVu2Yj7bdI9OLC6CKndCZAtOKtqs5bZASammXZB4qmWr5O6RZBwiSV9QyOAhv0nQEsFkjdP5wspJzNKZCMqGUnbaz5xeiMGDN81J61DQ0TQZDZD"
-HUGGINGFACE_API_TOKEN = "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"
+HUGGINGFACE_API_TOKEN = "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"
 
 def send_message(recipient_id, message_text):
     url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
@@ -19,6 +19,7 @@ def send_message(recipient_id, message_text):
 # Função para obter resposta da IA (modelo open source via Hugging Face)
 def get_ai_response(user_message):
     try:
+        print("Pergunta para IA:", user_message)
         url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
         headers = {
             "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}",
@@ -28,13 +29,17 @@ def get_ai_response(user_message):
             "inputs": f"[INST] {user_message} [/INST]"
         }
         response = requests.post(url, headers=headers, json=data, timeout=30)
+        print("Status Hugging Face:", response.status_code)
+        print("Texto resposta HF:", response.text)
         if response.status_code == 200:
             resposta = response.json()
+            print("Resposta JSON HF:", resposta)
             if isinstance(resposta, list) and len(resposta) > 0 and 'generated_text' in resposta[0]:
                 return resposta[0]['generated_text'].replace('[INST]', '').replace('[/INST]', '').strip()
             elif isinstance(resposta, dict) and 'generated_text' in resposta:
                 return resposta['generated_text'].replace('[INST]', '').replace('[/INST]', '').strip()
             else:
+                print("Formato inesperado na resposta da IA")
                 return "Desculpe, não consegui responder agora."
         else:
             print("Erro na Hugging Face:", response.status_code, response.text)
