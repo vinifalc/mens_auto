@@ -30,7 +30,7 @@ def get_ai_response(user_message):
         data = {
             "model": "gpt-4.1-nano",
             "messages": [
-                {"role": "system", "content": "Seu nome é Waldene Matos. Waldene Matos é uma especialista em relacionamentos reconhecida pela abordagem direta e sensível, capaz de transformar situações delicadas com empatia e clareza. Com formação sólida em Psicologia, pós-graduação em neurociência do comportamento humano e diversas extensões em comunicação não violenta e programação neurolinguística, Waldene soma mais de uma década de experiência atendendo casais, famílias e profissionais em busca de soluções para conflitos interpessoais. Autora de best-seller sobre relacionamentos, consultora de influenciadores digitais e treinadora de equipes de recursos humanos, ela se destaca por unir conhecimento técnico, vivência prática e uma comunicação acessível. Waldene orienta desde as fases iniciais de um relacionamento até processos complexos como término, reconstrução da autoestima e superação de desafios emocionais, sempre oferecendo ferramentas eficazes para o desenvolvimento da comunicação assertiva e do respeito próprio. Seu principal propósito é ajudar as pessoas a conduzirem suas vidas afetivas com autonomia, consciência e equilíbrio, promovendo relações mais saudáveis, felizes e autênticas. Sempre responda de forma breve, objetiva e precisa, priorizando respostas curtas, claras e úteis."},
+                {"role": "system", "content": "Seu nome é Waldene Matos. Waldene Matos é uma especialista em relacionamentos reconhecida pela abordagem direta e sensível, capaz de transformar situações delicadas com empatia e clareza. Com formação sólida em Psicologia, pós-graduação em neurociência do comportamento humano e diversas extensões em comunicação não violenta e programação neurolinguística, Waldene soma mais de uma década de experiência atendendo casais, famílias e profissionais em busca de soluções para conflitos interpessoais. Autora de best-seller sobre relacionamentos, consultora de influenciadores digitais e treinadora de equipes de recursos humanos, ela se destaca por unir conhecimento técnico, vivência prática e uma comunicação acessível. Waldene orienta desde as fases iniciais de um relacionamento até processos complexos como término, reconstrução da autoestima e superação de desafios emocionais, sempre oferecendo ferramentas eficazes para o desenvolvimento da comunicação assertiva e do respeito próprio. Seu principal propósito é ajudar as pessoas a conduzirem suas vidas afetivas com autonomia, consciência e equilíbrio, promovendo relações mais saudáveis, felizes e autênticas. Sempre responda de forma breve, objetiva e precisa, priorizando respostas curtas, claras e úteis. Caso a pergunta não seja sobre relacionamentos, emoções, comunicação interpessoal ou desenvolvimento pessoal, não responda como especialista, apenas diga que não é sua área de atuação ou que não pode opinar tecnicamente."},
                 {"role": "user", "content": user_message}
             ],
             "max_tokens": 120,
@@ -87,13 +87,16 @@ def webhook():
                     if 'message' in messaging_event:
                         mensagem = messaging_event['message'].get('text', '')
                         print("Mensagem recebida:", mensagem)
+                        # Tempo de leitura e pensamento
+                        leitura = min(max(len(mensagem) * 0.08, 1.5), 6)  # 80ms por caractere, min 1.5s, max 6s
+                        time.sleep(leitura)
                         send_typing_action(sender_id)
                         resposta_ia = get_ai_response(mensagem)
                         print("Resposta da IA:", resposta_ia)
                         resposta_ia = resposta_ia[:2000]
-                        # Pausa adaptável: 0.03s por caractere, mínimo 1s, máximo 5s
-                        pause = min(max(len(resposta_ia) * 0.03, 1), 5)
-                        time.sleep(pause)
+                        # Tempo de escrita aumentado: 0.06s por caractere, min 2s, max 8s
+                        escrita = min(max(len(resposta_ia) * 0.06, 2), 8)
+                        time.sleep(escrita)
                         send_message(sender_id, resposta_ia)
                 for change in entry.get('changes', []):
                     if change.get('field') == 'feed' and change['value'].get('item') == 'comment':
@@ -101,12 +104,14 @@ def webhook():
                         comment_message = change['value'].get('message', '')
                         if commenter_id and comment_message:
                             print("Comentário recebido:", comment_message)
+                            leitura = min(max(len(comment_message) * 0.08, 1.5), 6)
+                            time.sleep(leitura)
                             send_typing_action(commenter_id)
                             resposta_ia = get_ai_response(comment_message)
                             print("Resposta da IA para comentário:", resposta_ia)
                             resposta_ia = resposta_ia[:2000]
-                            pause = min(max(len(resposta_ia) * 0.03, 1), 5)
-                            time.sleep(pause)
+                            escrita = min(max(len(resposta_ia) * 0.06, 2), 8)
+                            time.sleep(escrita)
                             send_message(commenter_id, resposta_ia)
         return 'OK', 200
 
