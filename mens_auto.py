@@ -151,8 +151,13 @@ def webhook():
                             mensagem = messaging_event['message'].get('text', '')
                             print("Mensagem recebida:", mensagem)
                             resposta = get_ai_response(sender_id, mensagem)
-                            # Divide a resposta em partes menores e envia cada uma
+                            # Divide a resposta em partes menores e envia cada uma com tempo de digitação
                             for parte in split_message(resposta, max_length=80):
+                                # Tempo de leitura: 0.02s por caractere da mensagem recebida
+                                # Tempo de digitação: 0.06s por caractere da resposta
+                                tempo_leitura = min(max(len(mensagem) * 0.02, 1.0), 5.0)  # entre 1s e 5s
+                                tempo_digitacao = min(max(len(parte) * 0.06, 1.0), 8.0)  # entre 1s e 8s
+                                time.sleep(tempo_leitura + tempo_digitacao)
                                 send_message(sender_id, parte)
     return "OK", 200
 if __name__ == "__main__":
