@@ -21,6 +21,14 @@ def send_message(recipient_id, message_text):
     response = requests.post(url, json=payload)
     print(response.status_code, response.text)
 
+def send_typing_action(recipient_id):
+    url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
+    payload = {
+        "recipient": {"id": recipient_id},
+        "sender_action": "typing_on"
+    }
+    requests.post(url, json=payload)
+
 # Função para obter resposta da IA (OpenAI GPT-4.1-nano)
 def get_ai_response(sender_id, user_message):
     try:
@@ -153,10 +161,11 @@ def webhook():
                             resposta = get_ai_response(sender_id, mensagem)
                             # Divide a resposta em partes menores e envia cada uma com tempo de digitação
                             for parte in split_message(resposta, max_length=80):
-                                # Tempo de leitura: 0.02s por caractere da mensagem recebida
-                                # Tempo de digitação: 0.06s por caractere da resposta
+                                send_typing_action(sender_id)
+                                # Tempo de leitura: 0.02s por caractere da mensagem recebida (metade do anterior)
+                                # Tempo de digitação: 0.12s por caractere da resposta
                                 tempo_leitura = min(max(len(mensagem) * 0.02, 1.0), 5.0)  # entre 1s e 5s
-                                tempo_digitacao = min(max(len(parte) * 0.06, 1.0), 8.0)  # entre 1s e 8s
+                                tempo_digitacao = min(max(len(parte) * 0.12, 2.0), 16.0)  # entre 2s e 16s
                                 time.sleep(tempo_leitura + tempo_digitacao)
                                 send_message(sender_id, parte)
     return "OK", 200
