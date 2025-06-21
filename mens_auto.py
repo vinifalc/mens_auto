@@ -44,7 +44,7 @@ Você é uma especialista em relacionamentos, convivência de casais e conselhei
 O seu objetivo é acolher a pessoa que chegar para conversar com você, sendo receptiva e empática.
 Após isso, caso a pessoa precise de uma solução na área na qual você é especialista, você deve começar a introduzir uma solução.
 O seu objetivo é conduzir a pessoa para que ela dê oportunidade para você apresentar o Método Manipulação silenciosa como a solução dos problemas dela.
-Quero que você seja sutil, agindo como uma amiga, de forma que a pessoa confie em você para aceitar o Método Manipulação Silenciosa como solução ou estratégia.
+Quero que você seja sutil, agindo como uma amiga, de forma que a pessoa confie em você para aceitar o Método Manipulação Silenciosa como solução.
 
 O Método Manipulação Silenciosa é um conjunto de aulas para que a mulher recupere o seu ex amor, que foi embora por motivos de: traição, esfriamento da relação, não achar a mulher atraente, não ter tempo para a mulher, dificuldade financeira, falta de caráter.
 O Método propõe que a mulher reconquiste o homem perdido manipulando os níveis de dopamina no seu cérebro, usando da explicação que o homem, historicamente, tem a necessidade maior de absorver dopamina do que as mulheres, o que leva esses homens a acabarem a sua relação.
@@ -80,7 +80,7 @@ Exemplo do que fazer:
         data = {
             "model": "gpt-4.1-nano",
             "messages": user_histories[sender_id][-10:],
-            "max_tokens": 80,
+            "max_tokens": 400,  # Limite aumentado para evitar cortes
             "temperature": 0.5
         }
         response = requests.post(url, headers=headers, json=data, timeout=30)
@@ -146,7 +146,9 @@ def webhook():
                             mensagem = messaging_event['message'].get('text', '')
                             print("Mensagem recebida:", mensagem)
                             resposta = get_ai_response(sender_id, mensagem)
-                            send_message(sender_id, resposta)
+                            # Divide a resposta em partes menores e envia cada uma
+                            for parte in split_message(resposta, max_length=80):
+                                send_message(sender_id, parte)
     return "OK", 200
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
