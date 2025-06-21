@@ -1,13 +1,12 @@
 from flask import Flask, request
 import requests
 import os
-HUGGINGFACE_API_TOKEN = os.environ.get("HUGGINGFACE_API_TOKEN")
 
 app = Flask(__name__)
 
 VERIFY_TOKEN = "meu-token-super-secreto"
 PAGE_ACCESS_TOKEN = "EAAIOQ55PK3ABOzQKWLVAVb831ZCo90vEe1irA2wkaMFN2fCAwQsNEgELOt1ZADFAoGxjVGJI2tK1XFBZC0W3m2SEqb2cmH9iVu2Yj7bdI9OLC6CKndCZAtOKtqs5bZASammXZB4qmWr5O6RZBwiSV9QyOAhv0nQEsFkjdP5wspJzNKZCMqGUnbaz5xeiMGDN81J61DQ0TQZDZD"
-HUGGINGFACE_API_TOKEN = "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"
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
 
 def send_message(recipient_id, message_text):
     url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
@@ -18,36 +17,44 @@ def send_message(recipient_id, message_text):
     response = requests.post(url, json=payload)
     print(response.status_code, response.text)
 
-# Função para obter resposta da IA (modelo open source via Hugging Face)
+# Função para obter resposta da IA (OpenAI GPT-4.1-nano)
 def get_ai_response(user_message):
     try:
         print("Pergunta para IA:", user_message)
-        url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+        url = "https://api.openai.com/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}",
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
             "Content-Type": "application/json"
         }
         data = {
-            "inputs": f"[INST] {user_message} [/INST]"
+            "model": "gpt-4.1-nano",
+            "messages": [
+                {"role": "system", "content": "Você é um assistente útil."},
+                {"role": "user", "content": user_message}
+            ]
         }
         response = requests.post(url, headers=headers, json=data, timeout=30)
-        print("Status Hugging Face:", response.status_code)
-        print("Texto resposta HF:", response.text)
+        print("Status OpenAI:", response.status_code)
+        print("Texto resposta OpenAI:", response.text)
         if response.status_code == 200:
             resposta = response.json()
-            print("Resposta JSON HF:", resposta)
-            if isinstance(resposta, list) and len(resposta) > 0 and 'generated_text' in resposta[0]:
-                return resposta[0]['generated_text'].replace('[INST]', '').replace('[/INST]', '').strip()
-            elif isinstance(resposta, dict) and 'generated_text' in resposta:
-                return resposta['generated_text'].replace('[INST]', '').replace('[/INST]', '').strip()
+            print("Resposta JSON OpenAI:", resposta)
+            if (
+                "choices" in resposta and
+                isinstance(resposta["choices"], list) and
+                len(resposta["choices"]) > 0 and
+                "message" in resposta["choices"][0] and
+                "content" in resposta["choices"][0]["message"]
+            ):
+                return resposta["choices"][0]["message"]["content"].strip()
             else:
-                print("Formato inesperado na resposta da IA")
+                print("Formato inesperado na resposta da OpenAI")
                 return "Desculpe, não consegui responder agora."
         else:
-            print("Erro na Hugging Face:", response.status_code, response.text)
+            print("Erro na OpenAI:", response.status_code, response.text)
             return "Desculpe, não consegui responder agora."
     except Exception as e:
-        print("Exceção ao chamar Hugging Face:", e)
+        print("Exceção ao chamar OpenAI:", e)
         return "Desculpe, não consegui responder agora."
 
 @app.route('/webhook', methods=['GET', 'POST'])
@@ -85,6 +92,5 @@ def webhook():
         return 'OK', 200
 
 if __name__ == '__main__':
-    import os
     PORT = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=PORT)
