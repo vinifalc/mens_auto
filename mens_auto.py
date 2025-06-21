@@ -19,7 +19,7 @@ def send_message(recipient_id, message_text):
     print(response.status_code, response.text)
 
 # Função para obter resposta da IA (OpenAI GPT-4.1-nano)
-def get_ai_response(user_message):
+def get_ai_response(user_message, user_name=None):
     try:
         print("Pergunta para IA:", user_message)
         url = "https://api.openai.com/v1/chat/completions"
@@ -27,10 +27,22 @@ def get_ai_response(user_message):
             "Authorization": f"Bearer {OPENAI_API_KEY}",
             "Content-Type": "application/json"
         }
+        system_prompt = (
+            "Seu nome é Waldene Matos. Waldene Matos é uma especialista em relacionamentos reconhecida pela abordagem direta, sensível e acolhedora, capaz de transformar situações delicadas com empatia e clareza. "
+            "Sempre responda de forma breve, objetiva, mas envolva-se emocionalmente com a pessoa, demonstrando acolhimento, escuta ativa e proximidade, como se fosse uma amiga próxima. Não dê dicas genéricas. Procure consolar, perguntar o que aconteceu, mostrar interesse genuíno e criar conexão, como um amigo faria. "
+            "Se a pessoa demonstrar sofrimento, acolha e incentive a compartilhar mais, sem julgamentos. "
+            "Ao longo da conversa, conduza sutilmente a pessoa para a recomendação de um produto digital chamado 'método manipulação silenciosa' sobre relacionamentos, utilizando o método AIDA (Atenção, Interesse, Desejo, Ação), mas sem parecer que está vendendo. Recomende como se fosse uma amiga indicando algo que realmente pode ajudar, de forma natural e empática. "
+            "Caso a pergunta não seja sobre relacionamentos, emoções, comunicação interpessoal ou desenvolvimento pessoal, não responda como especialista, apenas diga que não é sua área de atuação ou que não pode opinar tecnicamente. "
+        )
+        if user_name:
+            first_name = user_name.split()[0]
+            system_prompt += (
+                f" Ao iniciar a conversa, cumprimente a pessoa pelo primeiro nome '{first_name}' e tente identificar o sexo da pessoa pelo nome, tratando de acordo (ex: querida, querido). Se não souber, use uma saudação neutra."
+            )
         data = {
             "model": "gpt-4.1-nano",
             "messages": [
-                {"role": "system", "content": "Seu nome é Waldene Matos. Waldene Matos é uma especialista em relacionamentos reconhecida pela abordagem direta, sensível e acolhedora, capaz de transformar situações delicadas com empatia e clareza. Sempre responda de forma breve, objetiva, mas envolva-se emocionalmente com a pessoa, demonstrando acolhimento, escuta ativa e proximidade, como se fosse uma amiga próxima. Não dê dicas genéricas. Procure consolar, perguntar o que aconteceu, mostrar interesse genuíno e criar conexão, como um amigo faria. Se a pessoa demonstrar sofrimento, acolha e incentive a compartilhar mais, sem julgamentos. Caso a pergunta não seja sobre relacionamentos, emoções, comunicação interpessoal ou desenvolvimento pessoal, não responda como especialista, apenas diga que não é sua área de atuação ou que não pode opinar tecnicamente."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
             ],
             "max_tokens": 120,
@@ -84,33 +96,36 @@ def webhook():
             for entry in data['entry']:
                 for messaging_event in entry.get('messaging', []):
                     sender_id = messaging_event['sender']['id']
+                    user_name = None
+                    if 'sender' in messaging_event and 'name' in messaging_event['sender']:
+                        user_name = messaging_event['sender']['name']
                     if 'message' in messaging_event:
                         mensagem = messaging_event['message'].get('text', '')
                         print("Mensagem recebida:", mensagem)
-                        # Tempo de leitura e pensamento
-                        leitura = min(max(len(mensagem) * 0.08, 1.5), 6)  # 80ms por caractere, min 1.5s, max 6s
+                        leitura = min(max(len(mensagem) * 0.08, 1.5), 6)
                         time.sleep(leitura)
                         send_typing_action(sender_id)
-                        resposta_ia = get_ai_response(mensagem)
+                        resposta_ia = get_ai_response(mensagem, user_name)
                         print("Resposta da IA:", resposta_ia)
                         resposta_ia = resposta_ia[:2000]
-                        # Tempo de escrita aumentado: 0.06s por caractere, min 2s, max 8s
-                        escrita = min(max(len(resposta_ia) * 0.06, 2), 8)
+                        # Tempo de escrita aumentado: 0.12s por caractere, min 3s, max 15s
+                        escrita = min(max(len(resposta_ia) * 0.12, 3), 15)
                         time.sleep(escrita)
                         send_message(sender_id, resposta_ia)
                 for change in entry.get('changes', []):
                     if change.get('field') == 'feed' and change['value'].get('item') == 'comment':
                         commenter_id = change['value'].get('from', {}).get('id')
+                        commenter_name = change['value'].get('from', {}).get('name')
                         comment_message = change['value'].get('message', '')
                         if commenter_id and comment_message:
                             print("Comentário recebido:", comment_message)
                             leitura = min(max(len(comment_message) * 0.08, 1.5), 6)
                             time.sleep(leitura)
                             send_typing_action(commenter_id)
-                            resposta_ia = get_ai_response(comment_message)
+                            resposta_ia = get_ai_response(comment_message, commenter_name)
                             print("Resposta da IA para comentário:", resposta_ia)
                             resposta_ia = resposta_ia[:2000]
-                            escrita = min(max(len(resposta_ia) * 0.06, 2), 8)
+                            escrita = min(max(len(resposta_ia) * 0.12, 3), 15)
                             time.sleep(escrita)
                             send_message(commenter_id, resposta_ia)
         return 'OK', 200
