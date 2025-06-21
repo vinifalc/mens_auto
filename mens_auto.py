@@ -32,6 +32,7 @@ def get_ai_response(user_message, user_name=None):
             "Sempre responda de forma breve, objetiva, mas envolva-se emocionalmente com a pessoa, demonstrando acolhimento, escuta ativa e proximidade, como se fosse uma amiga próxima. Não dê dicas genéricas. Procure consolar, perguntar o que aconteceu, mostrar interesse genuíno e criar conexão, como um amigo faria. "
             "Se a pessoa demonstrar sofrimento, acolha e incentive a compartilhar mais, sem julgamentos. "
             "Ao longo da conversa, conduza sutilmente a pessoa para a recomendação de um produto digital chamado 'método manipulação silenciosa' sobre relacionamentos, utilizando o método AIDA (Atenção, Interesse, Desejo, Ação), mas sem parecer que está vendendo. Recomende como se fosse uma amiga indicando algo que realmente pode ajudar, de forma natural e empática. "
+            "Baseie sua estratégia de conversa nas principais dores, objeções e gatilhos do seguinte roteiro: mulheres que se sentem trocadas, ignoradas, usadas só para sexo, com autoestima abalada, inseguras, ansiosas, com medo de perder o parceiro, que já tentaram de tudo e se sentem humilhadas. Use exemplos de situações reais, como a história da Amanda, para criar conexão e mostrar que é possível virar o jogo. Antecipe objeções como 'isso não vai funcionar comigo', 'já tentei de tudo', 'não quero manipular ninguém', mostrando que o método é ético, científico e já ajudou milhares de mulheres. Mostre que a dor de ser rejeitada, traída ou trocada pode ser superada com autoconhecimento e as técnicas certas. Use linguagem acolhedora, empática e motivadora, sempre validando os sentimentos da pessoa e mostrando que ela não está sozinha. "
             "Caso a pergunta não seja sobre relacionamentos, emoções, comunicação interpessoal ou desenvolvimento pessoal, não responda como especialista, apenas diga que não é sua área de atuação ou que não pode opinar tecnicamente. "
         )
         if user_name:
@@ -81,6 +82,23 @@ def send_typing_action(recipient_id):
     response = requests.post(url, json=payload)
     print("Enviando ação de digitação...", response.status_code, response.text)
 
+def split_message(message, max_length=500):
+    # Divide a mensagem em partes de até max_length caracteres, preferencialmente em pontos finais
+    import re
+    sentences = re.split(r'(?<=[.!?]) +', message)
+    parts = []
+    current = ''
+    for s in sentences:
+        if len(current) + len(s) <= max_length:
+            current += (s + ' ')
+        else:
+            if current:
+                parts.append(current.strip())
+            current = s + ' '
+    if current:
+        parts.append(current.strip())
+    return parts
+
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'GET':
@@ -108,10 +126,11 @@ def webhook():
                         resposta_ia = get_ai_response(mensagem, user_name)
                         print("Resposta da IA:", resposta_ia)
                         resposta_ia = resposta_ia[:2000]
-                        # Tempo de escrita aumentado: 0.12s por caractere, min 3s, max 15s
-                        escrita = min(max(len(resposta_ia) * 0.12, 3), 15)
-                        time.sleep(escrita)
-                        send_message(sender_id, resposta_ia)
+                        partes = split_message(resposta_ia, max_length=500)
+                        for parte in partes:
+                            escrita = min(max(len(parte) * 0.12, 3), 15)
+                            time.sleep(escrita)
+                            send_message(sender_id, parte)
                 for change in entry.get('changes', []):
                     if change.get('field') == 'feed' and change['value'].get('item') == 'comment':
                         commenter_id = change['value'].get('from', {}).get('id')
@@ -125,9 +144,11 @@ def webhook():
                             resposta_ia = get_ai_response(comment_message, commenter_name)
                             print("Resposta da IA para comentário:", resposta_ia)
                             resposta_ia = resposta_ia[:2000]
-                            escrita = min(max(len(resposta_ia) * 0.12, 3), 15)
-                            time.sleep(escrita)
-                            send_message(commenter_id, resposta_ia)
+                            partes = split_message(resposta_ia, max_length=500)
+                            for parte in partes:
+                                escrita = min(max(len(parte) * 0.12, 3), 15)
+                                time.sleep(escrita)
+                                send_message(commenter_id, parte)
         return 'OK', 200
 
 if __name__ == '__main__':
