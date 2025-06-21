@@ -12,6 +12,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 user_histories = {}
 last_message_id = {}
+last_message_timestamp = {}
 
 def send_message(recipient_id, message_text):
     url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
@@ -159,9 +160,15 @@ def webhook():
                         if 'message' in messaging_event:
                             mensagem = messaging_event['message'].get('text', '')
                             message_id = messaging_event['message'].get('mid')
-                            # Só responde se for uma mensagem nova
-                            if sender_id not in last_message_id or last_message_id[sender_id] != message_id:
+                            message_timestamp = messaging_event.get('timestamp', 0) // 1000  # Facebook timestamp is in ms
+                            now = int(time.time())
+                            # Só responde se for uma mensagem nova e recente (até 60s)
+                            if (
+                                (sender_id not in last_message_id or last_message_id[sender_id] != message_id)
+                                and (now - message_timestamp <= 60)
+                            ):
                                 last_message_id[sender_id] = message_id
+                                last_message_timestamp[sender_id] = message_timestamp
                                 print("Mensagem recebida:", mensagem)
                                 resposta = get_ai_response(sender_id, mensagem)
                                 # Divide a resposta em partes menores e envia cada uma com tempo de digitação
