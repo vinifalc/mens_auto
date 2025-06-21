@@ -1,6 +1,7 @@
 from flask import Flask, request
 import requests
 import os
+import time
 
 app = Flask(__name__)
 
@@ -57,6 +58,15 @@ def get_ai_response(user_message):
         print("Exceção ao chamar OpenAI:", e)
         return "Desculpe, não consegui responder agora."
 
+def send_typing_action(recipient_id):
+    url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
+    payload = {
+        "recipient": {"id": recipient_id},
+        "sender_action": "typing_on"
+    }
+    response = requests.post(url, json=payload)
+    print("Enviando ação de digitação...", response.status_code, response.text)
+
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'GET':
@@ -75,6 +85,8 @@ def webhook():
                     if 'message' in messaging_event:
                         mensagem = messaging_event['message'].get('text', '')
                         print("Mensagem recebida:", mensagem)
+                        send_typing_action(sender_id)
+                        time.sleep(2)  # Aguarda 2 segundos simulando digitação
                         resposta_ia = get_ai_response(mensagem)
                         print("Resposta da IA:", resposta_ia)
                         resposta_ia = resposta_ia[:2000]
@@ -85,6 +97,8 @@ def webhook():
                         comment_message = change['value'].get('message', '')
                         if commenter_id and comment_message:
                             print("Comentário recebido:", comment_message)
+                            send_typing_action(commenter_id)
+                            time.sleep(2)
                             resposta_ia = get_ai_response(comment_message)
                             print("Resposta da IA para comentário:", resposta_ia)
                             resposta_ia = resposta_ia[:2000]
