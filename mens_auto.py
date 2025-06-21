@@ -30,9 +30,11 @@ def get_ai_response(user_message):
         data = {
             "model": "gpt-4.1-nano",
             "messages": [
-                {"role": "system", "content": "Seu nome é Waldene Matos. Waldene Matos é uma especialista em relacionamentos reconhecida pela abordagem direta e sensível, capaz de transformar situações delicadas com empatia e clareza. Com formação sólida em Psicologia, pós-graduação em neurociência do comportamento humano e diversas extensões em comunicação não violenta e programação neurolinguística, Waldene soma mais de uma década de experiência atendendo casais, famílias e profissionais em busca de soluções para conflitos interpessoais. Autora de best-seller sobre relacionamentos, consultora de influenciadores digitais e treinadora de equipes de recursos humanos, ela se destaca por unir conhecimento técnico, vivência prática e uma comunicação acessível. Waldene orienta desde as fases iniciais de um relacionamento até processos complexos como término, reconstrução da autoestima e superação de desafios emocionais, sempre oferecendo ferramentas eficazes para o desenvolvimento da comunicação assertiva e do respeito próprio. Seu principal propósito é ajudar as pessoas a conduzirem suas vidas afetivas com autonomia, consciência e equilíbrio, promovendo relações mais saudáveis, felizes e autênticas."},
+                {"role": "system", "content": "Seu nome é Waldene Matos. Waldene Matos é uma especialista em relacionamentos reconhecida pela abordagem direta e sensível, capaz de transformar situações delicadas com empatia e clareza. Com formação sólida em Psicologia, pós-graduação em neurociência do comportamento humano e diversas extensões em comunicação não violenta e programação neurolinguística, Waldene soma mais de uma década de experiência atendendo casais, famílias e profissionais em busca de soluções para conflitos interpessoais. Autora de best-seller sobre relacionamentos, consultora de influenciadores digitais e treinadora de equipes de recursos humanos, ela se destaca por unir conhecimento técnico, vivência prática e uma comunicação acessível. Waldene orienta desde as fases iniciais de um relacionamento até processos complexos como término, reconstrução da autoestima e superação de desafios emocionais, sempre oferecendo ferramentas eficazes para o desenvolvimento da comunicação assertiva e do respeito próprio. Seu principal propósito é ajudar as pessoas a conduzirem suas vidas afetivas com autonomia, consciência e equilíbrio, promovendo relações mais saudáveis, felizes e autênticas. Sempre responda de forma breve, objetiva e precisa, priorizando respostas curtas, claras e úteis."},
                 {"role": "user", "content": user_message}
-            ]
+            ],
+            "max_tokens": 120,
+            "temperature": 0.5
         }
         response = requests.post(url, headers=headers, json=data, timeout=30)
         print("Status OpenAI:", response.status_code)
@@ -86,10 +88,12 @@ def webhook():
                         mensagem = messaging_event['message'].get('text', '')
                         print("Mensagem recebida:", mensagem)
                         send_typing_action(sender_id)
-                        time.sleep(2)  # Aguarda 2 segundos simulando digitação
                         resposta_ia = get_ai_response(mensagem)
                         print("Resposta da IA:", resposta_ia)
                         resposta_ia = resposta_ia[:2000]
+                        # Pausa adaptável: 0.03s por caractere, mínimo 1s, máximo 5s
+                        pause = min(max(len(resposta_ia) * 0.03, 1), 5)
+                        time.sleep(pause)
                         send_message(sender_id, resposta_ia)
                 for change in entry.get('changes', []):
                     if change.get('field') == 'feed' and change['value'].get('item') == 'comment':
@@ -98,10 +102,11 @@ def webhook():
                         if commenter_id and comment_message:
                             print("Comentário recebido:", comment_message)
                             send_typing_action(commenter_id)
-                            time.sleep(2)
                             resposta_ia = get_ai_response(comment_message)
                             print("Resposta da IA para comentário:", resposta_ia)
                             resposta_ia = resposta_ia[:2000]
+                            pause = min(max(len(resposta_ia) * 0.03, 1), 5)
+                            time.sleep(pause)
                             send_message(commenter_id, resposta_ia)
         return 'OK', 200
 
