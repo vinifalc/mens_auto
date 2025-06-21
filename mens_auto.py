@@ -9,6 +9,8 @@ VERIFY_TOKEN = "meu-token-super-secreto"
 PAGE_ACCESS_TOKEN = "EAAIOQ55PK3ABOzQKWLVAVb831ZCo90vEe1irA2wkaMFN2fCAwQsNEgELOt1ZADFAoGxjVGJI2tK1XFBZC0W3m2SEqb2cmH9iVu2Yj7bdI9OLC6CKndCZAtOKtqs5bZASammXZB4qmWr5O6RZBwiSV9QyOAhv0nQEsFkjdP5wspJzNKZCMqGUnbaz5xeiMGDN81J61DQ0TQZDZD"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
+user_histories = {}
+
 def send_message(recipient_id, message_text):
     url = f"https://graph.facebook.com/v18.0/me/messages?access_token={PAGE_ACCESS_TOKEN}"
     payload = {
@@ -19,7 +21,7 @@ def send_message(recipient_id, message_text):
     print(response.status_code, response.text)
 
 # Função para obter resposta da IA (OpenAI GPT-4.1-nano)
-def get_ai_response(user_message, user_name=None):
+def get_ai_response(sender_id, user_message):
     try:
         print("Pergunta para IA:", user_message)
         url = "https://api.openai.com/v1/chat/completions"
@@ -35,12 +37,17 @@ def get_ai_response(user_message, user_name=None):
             "Só aprofunde nos temas de relacionamento se a pessoa demonstrar interesse ou mencionar algo relacionado. "
             "Mantenha sempre empatia, autenticidade e cuidado, sem parecer insistente ou invasiva. "
         )
+        # Inicializa o histórico se não existir
+        if sender_id not in user_histories:
+            user_histories[sender_id] = [
+                {"role": "system", "content": system_prompt}
+            ]
+        # Adiciona a mensagem do usuário ao histórico
+        user_histories[sender_id].append({"role": "user", "content": user_message})
+        # Envia o histórico completo (últimas 10 interações)
         data = {
             "model": "gpt-4.1-nano",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
+            "messages": user_histories[sender_id][-10:],
             "max_tokens": 120,
             "temperature": 0.5
         }
@@ -57,7 +64,10 @@ def get_ai_response(user_message, user_name=None):
                 "message" in resposta["choices"][0] and
                 "content" in resposta["choices"][0]["message"]
             ):
-                return resposta["choices"][0]["message"]["content"].strip()
+                resposta_gerada = resposta["choices"][0]["message"]["content"].strip()
+                # Adiciona a resposta da IA ao histórico
+                user_histories[sender_id].append({"role": "assistant", "content": resposta_gerada})
+                return resposta_gerada
             else:
                 print("Formato inesperado na resposta da OpenAI")
                 return "Desculpe, não consegui responder agora."
@@ -103,11 +113,9 @@ def webhook():
                         if 'message' in messaging_event:
                             mensagem = messaging_event['message'].get('text', '')
                             print("Mensagem recebida:", mensagem)
-                            # Aqui você pode processar a mensagem recebida e gerar uma resposta
-                            resposta = get_ai_response(mensagem)
-                            # Envia a resposta de volta para o usuário
+                            resposta = get_ai_response(sender_id, mensagem)
                             send_message(sender_id, resposta)
-        return "OK", 200
+    return "OK", 200
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
