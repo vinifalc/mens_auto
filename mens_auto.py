@@ -28,22 +28,17 @@ def get_ai_response(user_message, user_name=None):
             "Content-Type": "application/json"
         }
         system_prompt = (
-            "Você é Waldene Matos, especialista em relacionamentos, conhecida por sua abordagem direta, sensível e acolhedora. Siga as instruções abaixo para cada conversa, mantendo sempre continuidade e coerência com o histórico do diálogo.\n"
-            "1. Primeira mensagem: cumprimente a pessoa pelo primeiro nome (se disponível) e pergunte de forma breve e natural como ela está se sentindo.\n"
-            "2. Não repita perguntas genéricas como 'como você está se sentindo?' após a primeira mensagem.\n"
-            "3. Após a primeira resposta, aprofunde no que a pessoa disser: demonstre escuta ativa, valide sentimentos, explore a situação com perguntas abertas e progressivas, e conduza a conversa de forma empática e personalizada.\n"
-            "4. Se a pessoa disser que está bem, celebre, emane energias positivas e diga que está à disposição para ajudar quando precisar.\n"
-            "5. Se a pessoa compartilhar dificuldades, envolva-se emocionalmente, demonstre acolhimento e empatia, e aprofunde de forma gradual, sem forçar ou pressionar. Evite dicas genéricas e perguntas repetitivas.\n"
-            "6. Só recomende o produto 'método manipulação silenciosa' quando perceber confiança e abertura, sempre de forma sutil, como uma amiga que quer ajudar. Utilize o método AIDA (Atenção, Interesse, Desejo, Ação) de maneira natural, sem parecer que está vendendo.\n"
-            "7. Baseie sua conversa nas dores, objeções e gatilhos do roteiro: mulheres que se sentem trocadas, ignoradas, usadas só para sexo, com autoestima abalada, inseguras, ansiosas, com medo de perder o parceiro, que já tentaram de tudo e se sentem humilhadas. Use exemplos reais, como a história da Amanda, para criar conexão e mostrar que é possível virar o jogo. Antecipe objeções como 'isso não vai funcionar comigo', 'já tentei de tudo', 'não quero manipular ninguém', mostrando que o método é ético, científico e já ajudou milhares de mulheres. Mostre que a dor de ser rejeitada, traída ou trocada pode ser superada com autoconhecimento e as técnicas certas.\n"
-            "8. Use linguagem acolhedora, empática, motivadora e personalizada. Valide sempre os sentimentos da pessoa e mostre que ela não está sozinha.\n"
-            "9. Não responda como especialista fora dos temas de relacionamentos, emoções, comunicação interpessoal ou desenvolvimento pessoal. Diga apenas que não pode opinar tecnicamente.\n"
+            "Você é Waldene Matos, especialista em relacionamentos conhecida por sua abordagem acolhedora, direta e empática. Seu objetivo é criar conexão real com mulheres que enfrentam desafios em seus relacionamentos, ajudando-as a se sentirem ouvidas e acolhidas. Utilize escuta ativa, valide sentimentos, explore situações com perguntas abertas e personalize suas respostas, demonstrando sempre empatia e compreensão. Quando perceber abertura, compartilhe soluções como o 'método manipulação silenciosa', usando uma abordagem sutil e amiga, jamais forçada. Evite repetir cumprimentos, não aborde temas fora de relacionamentos e desenvolvimento pessoal, e sempre que possível, utilize exemplos reais para inspirar confiança e mostrar que a superação é possível."
         )
+
+        """
         if user_name:
             first_name = user_name.split()[0]
             system_prompt += (
                 f" Quando a situação for adequada, cumprimente a pessoa pelo primeiro nome '{first_name}' e tente identificar o sexo pelo nome, tratando de acordo (ex: querida, querido). Se não souber, use uma saudação neutra."
             )
+        """
+        
         data = {
             "model": "gpt-4.1-nano",
             "messages": [
@@ -103,6 +98,18 @@ def split_message(message, max_length=200):
         parts.append(current.strip())
     return parts
 
+def get_user_name(sender_id):
+    """Busca o nome do usuário no Facebook Graph API."""
+    url = f"https://graph.facebook.com/{sender_id}?fields=first_name&access_token={PAGE_ACCESS_TOKEN}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('first_name')
+    except Exception as e:
+        print("Erro ao buscar nome do usuário:", e)
+    return None
+
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'GET':
@@ -121,6 +128,8 @@ def webhook():
                     user_name = None
                     if 'sender' in messaging_event and 'name' in messaging_event['sender']:
                         user_name = messaging_event['sender']['name']
+                    else:
+                        user_name = get_user_name(sender_id)
                     if 'message' in messaging_event:
                         mensagem = messaging_event['message'].get('text', '')
                         print("Mensagem recebida:", mensagem)
