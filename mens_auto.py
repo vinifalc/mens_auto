@@ -2,6 +2,7 @@ from flask import Flask, request
 import requests
 import os
 import time
+import re
 
 app = Flask(__name__)
 
@@ -110,17 +111,21 @@ Exemplo do que fazer:
         print("Exceção ao chamar OpenAI:", e)
         return "Desculpe, não consegui responder agora."
 
-def split_message(message, max_length=200):
+def split_message(message, max_length=80):
+    # Divide o texto em sentenças usando pontuação
+    sentences = re.split(r'(?<=[.!?])\s+', message)
     parts = []
-    current = ""
-    for word in message.split():
-        if len(current) + len(word) + 1 <= max_length:
+    current = ''
+    for sentence in sentences:
+        # Se adicionar a próxima sentença não ultrapassa o limite, adiciona
+        if len(current) + len(sentence) + 1 <= max_length:
             if current:
-                current += " "
-            current += word
+                current += ' '
+            current += sentence
         else:
-            parts.append(current.strip())
-            current = word
+            if current:
+                parts.append(current.strip())
+            current = sentence
     if current:
         parts.append(current.strip())
     return parts
